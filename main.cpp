@@ -112,23 +112,16 @@ private:
 	) {
 		numbers.push_back(value);
 
-		/*
-		write_bytes(movss_xmm1_DWORD_PTR_rip_PLUS_0x00, bytes);
-		label_usages.push_back(LabelUsage{ .start_offset = bytes.size() - 4, .length = 4, .id = (uint32_t)numbers.size() - 1, .type = UsageType::DEFERENCE });
-		write_bytes(comiss_xmm0_xmm1, bytes);
-		*/
-
 		write_bytes(comiss_xmm0_DWORD_PTR_rip_PLUS_0x00, bytes);
 		label_usages.push_back(LabelUsage{ .start_offset = bytes.size() - 4, .length = 4, .id = (uint32_t)numbers.size() - 1, .type = UsageType::DEFERENCE });
 
+		auto current_label = context.global_label_counter++;
+		write_bytes(jae_0x00, bytes);
+		label_usages.push_back(LabelUsage{ .start_offset = bytes.size() - 4, .length = 4, .id = current_label, .type = UsageType::JUMP });
 
 		if (left == nullptr && right == nullptr) {
 			if (rightCount == 0) {
 				// We are on the far left			
-				auto current_label = context.global_label_counter++;
-				write_bytes(jae_0x00, bytes);
-				label_usages.push_back(LabelUsage{ .start_offset = bytes.size() - 4, .length = 4, .id = current_label, .type = UsageType::JUMP });
-
 				// xmm0 < top->value
 				write_bytes(mov_eax_MISSING, bytes);
 				write_bytes<int32_t>(-1, bytes);
@@ -142,10 +135,6 @@ private:
 			}
 			else if (leftCount == 0) {
 				// We are on the far right
-				auto current_label = context.global_label_counter++;
-				write_bytes(jae_0x00, bytes);
-				label_usages.push_back(LabelUsage{ .start_offset = bytes.size() - 4, .length = 4, .id = current_label, .type = UsageType::JUMP });
-
 				// xmm0 < top->value
 				write_bytes(mov_eax_MISSING, bytes);
 				write_bytes<uint32_t>(context.global_return_counter++, bytes);
@@ -158,10 +147,6 @@ private:
 				write_bytes(ret, bytes);
 			}
 			else {
-				auto current_label = context.global_label_counter++;
-				write_bytes(jae_0x00, bytes);
-				label_usages.push_back(LabelUsage{ .start_offset = bytes.size() - 4, .length = 4, .id = current_label, .type = UsageType::JUMP });
-
 				// xmm0 < top->value
 				write_bytes(mov_eax_MISSING, bytes);
 				write_bytes<uint32_t>(context.global_return_counter++, bytes);
@@ -175,41 +160,24 @@ private:
 			}
 		}
 		else if (left == nullptr) {
-			/*
 			if (rightCount == 0) {
 				// We are on the far left
-				ss << "comiss xmm0, CONSTANT_(" << value << ")\n";
-				auto current_label = context.global_label_counter++;
-				ss << "jbe .L" << current_label << "\n";
 				// xmm0 < top->value
-				ss << "mov eax, -1\n";
-				ss << "ret\n";
+				write_bytes(mov_eax_MISSING, bytes);
+				write_bytes<uint32_t>(-1, bytes);
+				write_bytes(ret, bytes);
+
 				// xmm0 >= top->value
-				ss << ".L" << current_label << "\n";
-				right->codegen_asm(ss, context, leftCount, rightCount + 1);
+				label_definitions.insert({ current_label, LabelDefinition{.start_offset = bytes.size() } });
+				right->codegen_bin_recur(bytes, label_definitions, label_usages, numbers, context, leftCount + 1, rightCount);
 			}
 			else {
-				ss << "comiss xmm0, CONSTANT_(" << value << ")\n";
-				auto current_label = context.global_label_counter++;
-				ss << "jbe .L" << current_label << "\n";
-				// xmm0 < top->value
-				ss << "mov eax, " << context.global_return_counter++ << "\n";
-				ss << "ret";
-				// xmm0 >= top->value
-				ss << ".L" << current_label << "\n";
-				ss << "mov eax, " << context.global_return_counter++ << "\n";
-				ss << "ret\n";
+				throw std::exception("This should not happen. There is an error in the binary tree's structure.");
 			}
-			*/
 		}
 		else if (right == nullptr) {
-			/*
 			if (leftCount == 0) {
 				// We are on the far right
-				auto current_label = context.global_label_counter++;
-				write_bytes(jae_0x00, bytes);
-				label_usages.push_back(LabelUsage{ .start_offset = bytes.size() - 4, .length = 4, .id = current_label, .type = UsageType::JUMP });
-
 				// xmm0 < top->value
 				left->codegen_bin_recur(bytes, label_definitions, label_usages, numbers, context, leftCount + 1, rightCount);
 
@@ -220,26 +188,10 @@ private:
 				write_bytes(ret, bytes);
 			}
 			else {
-				auto current_label = context.global_label_counter++;
-				write_bytes(jae_0x00, bytes);
-				label_usages.push_back(LabelUsage{ .start_offset = bytes.size() - 4, .length = 4, .id = current_label, .type = UsageType::JUMP });
-
-				// xmm0 < top->value
-				left->codegen_bin_recur(bytes, label_definitions, label_usages, numbers, context, leftCount + 1, rightCount);
-
-				// xmm0 >= top->value
-				label_definitions.insert({ current_label, LabelDefinition{.start_offset = bytes.size() } });
-				write_bytes(mov_eax_MISSING, bytes);
-				write_bytes<uint32_t>(context.global_return_counter++, bytes);
-				write_bytes(ret, bytes);
+				throw std::exception("This should not happen. There is an error in the binary tree's structure.");
 			}
-			*/
 		}
 		else {
-			auto current_label = context.global_label_counter++;
-			write_bytes(jae_0x00, bytes);
-			label_usages.push_back(LabelUsage{ .start_offset = bytes.size() - 4, .length = 4, .id = current_label, .type = UsageType::JUMP });
-
 			// xmm0 < top->value
 			left->codegen_bin_recur(bytes, label_definitions, label_usages, numbers, context, leftCount + 1, rightCount);
 
@@ -289,116 +241,6 @@ public:
 		return bytes;
 	}
 
-	void codegen_asm(
-		std::stringstream& ss, 
-		ASM_context& context,
-		uint32_t leftCount,
-		uint32_t rightCount
-	) const {
-		if (left == nullptr && right == nullptr) {
-			if (rightCount == 0) {
-				// We are on the far left
-				ss << "comiss xmm0, CONSTANT_(" << value << ")\n";
-				auto current_label = context.global_label_counter++;
-				ss << "jbe .L" << current_label << "\n";
-				// xmm0 < top->value
-				ss << "mov eax, -1\n";
-				ss << "ret\n";
-				// xmm0 >= top->value
-				ss << ".L" << current_label << "\n";
-				ss << "mov eax, " << context.global_return_counter++ << "\n";
-				ss << "ret\n";
-			}
-			else if (leftCount == 0) {
-				// We are on the far right
-				ss << "comiss xmm0, CONSTANT_(" << value << ")\n";
-				auto current_label = context.global_label_counter++;
-				ss << "jbe .L" << current_label << "\n";
-				// xmm0 < top->value
-				ss << "mov eax, " << context.global_return_counter++ << "\n";
-				ss << "ret\n";
-				// xmm0 >= top->value
-				ss << ".L" << current_label << "\n";
-				ss << "mov eax, -1\n";
-				ss << "ret\n";
-			}
-			else {
-				ss << "comiss xmm0, CONSTANT_(" << value << ")\n";
-				auto current_label = context.global_label_counter++;
-				ss << "jbe .L" << current_label << "\n";
-				// xmm0 < top->value
-				ss << "mov eax, " << context.global_return_counter++ << "\n";
-				ss << "ret";
-				// xmm0 >= top->value
-				ss << ".L" << current_label << "\n";
-				ss << "mov eax, " << context.global_return_counter++ << "\n";
-				ss << "ret\n";
-			}
-		}
-		else if (left == nullptr) {
-			if (rightCount == 0) {
-				// We are on the far left
-				ss << "comiss xmm0, CONSTANT_(" << value << ")\n";
-				auto current_label = context.global_label_counter++;
-				ss << "jbe .L" << current_label << "\n";
-				// xmm0 < top->value
-				ss << "mov eax, -1\n";
-				ss << "ret\n";
-				// xmm0 >= top->value
-				ss << ".L" << current_label << "\n";
-				right->codegen_asm(ss, context, leftCount, rightCount + 1);
-			}
-			else {
-				ss << "comiss xmm0, CONSTANT_(" << value << ")\n";
-				auto current_label = context.global_label_counter++;
-				ss << "jbe .L" << current_label << "\n";
-				// xmm0 < top->value
-				ss << "mov eax, " << context.global_return_counter++ << "\n";
-				ss << "ret";
-				// xmm0 >= top->value
-				ss << ".L" << current_label << "\n";
-				ss << "mov eax, " << context.global_return_counter++ << "\n";
-				ss << "ret\n";
-			}
-		}
-		else if (right == nullptr) {
-			if (leftCount == 0) {
-				// We are on the far right
-				ss << "comiss xmm0, CONSTANT_(" << value << ")\n";
-				auto current_label = context.global_label_counter++;
-				ss << "jbe .L" << current_label << "\n";
-				// xmm0 < top->value
-				left->codegen_asm(ss, context, leftCount + 1, rightCount);
-				// xmm0 >= top->value
-				ss << ".L" << current_label << "\n";
-				ss << "mov eax, -1\n";
-				ss << "ret\n";
-			}
-			else {
-				ss << "comiss xmm0, CONSTANT_(" << value << ")\n";
-				auto current_label = context.global_label_counter++;
-				ss << "jbe .L" << current_label << "\n";
-				// xmm0 < top->value
-				ss << "mov eax, " << context.global_return_counter++ << "\n";
-				ss << "ret";
-				// xmm0 >= top->value
-				ss << ".L" << current_label << "\n";
-				ss << "mov eax, " << context.global_return_counter++ << "\n";
-				ss << "ret\n";
-			}
-		}
-		else {
-			ss << "comiss xmm0, CONSTANT_(" << value << ")\n";
-			auto current_label = context.global_label_counter++;
-			ss << "jbe .L" << current_label << "\n";
-			// xmm0 < top->value
-			left->codegen_asm(ss, context, leftCount + 1, rightCount);
-			// xmm0 >= top->value
-			ss << ".L" << current_label << "\n";
-			right->codegen_asm(ss, context, leftCount, rightCount + 1);
-		}
-	}
-
 	void codegen_text(std::stringstream& ss, int leftCount, int rightCount, int64_t& id) const {
 		if (left == nullptr && right == nullptr) {
 			if (rightCount == 0) {
@@ -444,7 +286,6 @@ public:
 			}
 			else {
 				throw std::exception("This should not happen. There is an error in the binary tree's structure.");
-
 			}
 		}
 		else if (right == nullptr) {
@@ -564,26 +405,27 @@ bool asm_is_x_greater_than_or_equal_test(float x, float value) {
 }
 
 int main() {
-	std::vector<float> x_values = { -3.0f, 0.0f, 1.0f, 3.0f, 4.0f, 5.0f };
-	// std::vector<float> x_values = { -3.0f, 0.0f, 1.0f };
+	// std::vector<float> x_values = { -3.0f, 0.0f, 1.0f, 3.0f, 4.0f, 5.0f };
+	std::vector<float> x_values = { -3.0f, 0.0f, 1.0f };
 	std::sort(x_values.begin(), x_values.end());
 
 	int64_t build_id = 0;
 	auto tree = build_breakpoint_tree(x_values, build_id);
 
-	std::cout << asm_mult_test(129.0f, 6.0f) << "\n";
+	// std::cout << asm_mult_test(129.0f, 6.0f) << "\n";
 	
 	/*
 	auto result = asm_is_x_greater_than_or_equal_test(100.0f, 100.0f);
 	std::cout << std::boolalpha << result << std::endl;
 	*/
 
+	/*
 	int64_t print_id = 0;
 	std::stringstream ss;
 	tree->codegen_text(ss, 0, 0, print_id);
 	std::cout << "=========\n" << ss.str() << "=========\n";
+	*/
 
-#if false
 	auto bytes = tree->codegen_bin(x_values);
 	using FUNC_PTR = int32_t(*)(float);
 	auto memory = exec_memory_create(bytes);
@@ -598,7 +440,6 @@ int main() {
 	assert(ptr(1.1f) == -1);
 
 	exec_memory_delete(memory);
-#endif
 	
 #if false
 	for (const auto byte : bytes) {
