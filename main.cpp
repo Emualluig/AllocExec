@@ -443,15 +443,8 @@ public:
 				ss << "}\n";
 			}
 			else {
-				ss << "// left == nullptr && rightCount != 0\n";
-				ss << "if (x < " << value << ") {\n";
-				ss << "return " << id << ";\n";
-				id += 1;
-				ss << "} else {\n";
-				ss << "// x >= " << value << "\n";
-				ss << "return " << id << ";\n";
-				ss << "}\n";
-				id += 1;
+				throw std::exception("This should not happen. There is an error in the binary tree's structure.");
+
 			}
 		}
 		else if (right == nullptr) {
@@ -465,15 +458,7 @@ public:
 				ss << "}\n";
 			}
 			else {
-				ss << "// right == nullptr && leftCount != 0\n";
-				ss << "if (x < " << value << ") {\n";
-				ss << "return " << id << ";\n";
-				id += 1;
-				ss << "} else {\n";
-				ss << "// x >= " << value << "\n";
-				ss << "return " << id << ";\n";
-				ss << "}\n";
-				id += 1;
+				throw std::exception("This should not happen. There is an error in the binary tree's structure.");
 			}
 		}
 		else {
