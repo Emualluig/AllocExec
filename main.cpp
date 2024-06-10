@@ -115,7 +115,7 @@ int main() {
 	std::cout << "Linear Search: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2) << "\n";
 	std::cout << "Binary Search: " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3) << "\n";
 	std::cout << "JIT: " << std::chrono::duration_cast<std::chrono::milliseconds>(t5 - t4) 
-				<< ", compilation: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0) << "\n";
+				<< ", compilation: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0) << "\n";
 	
 	return 0;
 }
