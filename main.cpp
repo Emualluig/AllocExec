@@ -60,10 +60,15 @@ void test() {
 
 int main() {
 	std::vector<float> x_values = { 
+		/*
 		-100.0f, -3.0f, 0.0f, 1.0f, 3.0f, 4.0f, 5.0f, 
 		6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 
 		13.0f, 14.0f, 15.0f, 16.0f, 17.0f, 18.0f, 19.0f
+		*/
 	};
+	for (std::size_t i = 0; i < 1'000; i++) {
+		x_values.push_back((float)i);
+	}
 	std::sort(x_values.begin(), x_values.end());
 
 	auto t0 = std::chrono::high_resolution_clock::now();
