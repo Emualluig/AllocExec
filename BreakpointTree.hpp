@@ -193,7 +193,15 @@ namespace Codegen {
 				codegen_impl(node->left, bytes, label_definitions, label_usages, numbers, context, leftCount + 1, rightCount);
 			}
 			else {
-				throw std::exception("This should not happen. There is an error in the binary tree's structure.");
+				// xmm0 < top->value
+				write_bytes(mov_eax_MISSING, bytes);
+				write_bytes<uint32_t>(context.global_return_counter++, bytes);
+				write_bytes(ret, bytes);
+
+				// xmm0 >= top->value
+				label_definitions.insert({ current_label, LabelDefinition{.start_offset = bytes.size() } });
+				codegen_impl(node->left, bytes, label_definitions, label_usages, numbers, context, leftCount + 1, rightCount);
+
 			}
 		}
 		else if (node->right == nullptr) {
@@ -209,7 +217,14 @@ namespace Codegen {
 				write_bytes(ret, bytes);
 			}
 			else {
-				throw std::exception("This should not happen. There is an error in the binary tree's structure.");
+				// xmm0 < top->value
+				codegen_impl(node->left, bytes, label_definitions, label_usages, numbers, context, leftCount + 1, rightCount);
+
+				// xmm0 >= top->value
+				label_definitions.insert({ current_label, LabelDefinition{.start_offset = bytes.size() } });
+				write_bytes(mov_eax_MISSING, bytes);
+				write_bytes<uint32_t>(context.global_return_counter++, bytes);
+				write_bytes(ret, bytes);
 			}
 		}
 		else {
@@ -268,7 +283,7 @@ class ExeIntervalSearch {
 public:
 	explicit ExeIntervalSearch(const std::vector<float>& intervals) {
 		auto tree = build_tree(intervals);
-		tree_print(tree, 0);
+		// tree_print(tree, 0);
 		auto bytes = Codegen::codegen(intervals, tree);
 		memory = exec_memory_create(bytes);
 		delete tree;

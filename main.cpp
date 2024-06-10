@@ -72,28 +72,45 @@ int main() {
 
 	// The intervals are [lower_bound, upper_bound)
 
+	// Change margin and step to get longer/shorter runs
+	float margin = 10.0f;
+	int32_t steps = 99'999'999;
+	float lower_bound = x_values.front() - margin;
+	float upper_bound = x_values.back() + margin;
+	float increment = (upper_bound - lower_bound) / steps;
+
+	/*
+	for (int32_t i = 0; i < steps; i++) {
+		float f = increment * i + lower_bound;
+		int32_t a = interval_search_linear(x_values, f);
+		int32_t b = interval_search_binary(x_values, f);
+		int32_t c = jit.run(f);
+		std::cout << a << ", " << b << ", " << c << "\n";
+	}
+	*/
+	
 	// Use volatile to prevent being optimized away.
 	auto t2 = std::chrono::high_resolution_clock::now();
-	for (int64_t i = -9999999; i <= 9999999; i++) {
-		float f = (float)i / 100.0f;
+	for (int32_t i = 0; i < steps; i++) {
+		float f = increment * i + lower_bound;
 		volatile int32_t index = interval_search_linear(x_values, f);
 	}
 	auto t3 = std::chrono::high_resolution_clock::now();
-	for (int64_t i = -9999999; i <= 9999999; i++) {
-		float f = (float)i / 100.0f;
+	for (int32_t i = 0; i < steps; i++) {
+		float f = increment * i + lower_bound;
 		volatile int32_t index = interval_search_binary(x_values, f);
 	}
 	auto t4 = std::chrono::high_resolution_clock::now();
-	for (int64_t i = -9999999; i <= 9999999; i++) {
-		float f = (float)i / 100.0f;
+	for (int32_t i = 0; i < steps; i++) {
+		float f = increment * i + lower_bound;
 		volatile int32_t index = jit.run(f);
 	}
 	auto t5 = std::chrono::high_resolution_clock::now();
 
-	std::cout << "Linear: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2) << "\n";
-	std::cout << "Binary: " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3) << "\n";
+	std::cout << "Linear Search: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2) << "\n";
+	std::cout << "Binary Search: " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3) << "\n";
 	std::cout << "JIT: " << std::chrono::duration_cast<std::chrono::milliseconds>(t5 - t4) 
-				<< ", compiling: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0) << "\n";
-
+				<< ", compilation: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0) << "\n";
+	
 	return 0;
 }
