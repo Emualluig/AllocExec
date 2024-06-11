@@ -8,6 +8,13 @@
 #include "Byte.hpp"
 #include "ExecutableMemory.hpp"
 
+#include <boost/unordered_map.hpp>
+#include <gtl/phmap.hpp>
+
+/* Could not get absl to compile
+#include <absl/container/flat_hash_map.h>
+*/
+
 void test() {
 	std::vector<float> x_values = {
 		-3.0f, 0.0f, 1.0f, 3.0f, 4.0f, 5.0f
@@ -150,37 +157,55 @@ int main_jitree() {
 }
 
 int main_jitable() {
-	std::unordered_map<int32_t, void*> table = {};
-	int32_t start_point = -99'000'000;
+	std::unordered_map<int32_t, void*> table_std = {};
+	boost::unordered_map<int32_t, void*> table_boost = {};
+	// absl::flat_hash_map<int32_t, void*> table_absl = {};
+	gtl::flat_hash_map<int32_t, void*> table_gtl = {};
+
+	int32_t start_point = -999'000'000;
 	int32_t end_point = -start_point;
-	int32_t build_step = 100;
+	int32_t build_step = 1'000;
 	int32_t test_step = 1;
 	for (int32_t i = start_point; i <= end_point; i += build_step) {
 		if (i == 0) {
 			continue;
 		}
-		table.insert({ i, (void*)i });
+		table_std.insert({ i, (void*)i });
+		table_boost.insert({ i, (void*)i });
+		// table_absl.insert({ i, (void*)i });
+		table_gtl.insert({ i, (void*)i });
 	}
 
 	auto t0 = std::chrono::high_resolution_clock::now();
-	auto jit = ExeTable(table);
+	auto jit = ExeTable(table_std);
 	auto t1 = std::chrono::high_resolution_clock::now();
 
 	auto t2 = std::chrono::high_resolution_clock::now();
 	for (int32_t i = start_point; i <= end_point; i += test_step) {
-		volatile bool index = table.find(i) != table.end();
+		volatile bool index = table_std.find(i) != table_std.end();
 	}
 	auto t3 = std::chrono::high_resolution_clock::now();
 	for (int32_t i = start_point; i <= end_point; i += test_step) {
 		volatile bool index = jit.run(i);
 	}
 	auto t4 = std::chrono::high_resolution_clock::now();
+	for (int32_t i = start_point; i <= end_point; i += test_step) {
+		volatile bool index = table_boost.find(i) != table_boost.end();
+	}
+	auto t5 = std::chrono::high_resolution_clock::now();
+	for (int32_t i = start_point; i <= end_point; i += test_step) {
+		volatile bool index = table_gtl.find(i) != table_gtl.end();
+	}
+	auto t6 = std::chrono::high_resolution_clock::now();
 
 	std::cout
-		<< "Interval: [" << start_point << ", " << end_point << "], step ratio: " << test_step << "/" << build_step << ", entries: " << table.size() << "\n"
+		<< "Interval: [" << start_point << ", " << end_point << "], step ratio: " << test_step << "/" << build_step << ", entries: " << table_std.size() << "\n"
 		<< "unordered_map: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2) << "\n"
 		<< "jit: " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3)
-		<< " , compilation: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0) << "\n";
+		<< ", compilation: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0) 
+		<< ", total: " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3 + t1 - t0) << "\n"
+		<< "boost: " << std::chrono::duration_cast<std::chrono::milliseconds>(t5 - t4) << "\n"
+		<< "gtl: " << std::chrono::duration_cast<std::chrono::milliseconds>(t6 - t5) << "\n";
 
 	return 0;
 }

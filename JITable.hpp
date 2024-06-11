@@ -45,6 +45,7 @@ JITableTree* build_table_tree_impl(const std::vector<std::pair<int32_t, void*>>&
 
 JITableTree* build_table_tree(const std::unordered_map<int32_t, void*>& basic_table) {
 	std::vector<std::pair<int32_t, void*>> kv_pairs = {};
+	kv_pairs.reserve(basic_table.size() + 10);
 	for (const auto& kv_map : basic_table) {
 		if (kv_map.second == nullptr) {
 			throw std::exception("Not allowed to have a value be nullptr");
