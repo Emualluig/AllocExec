@@ -3,6 +3,7 @@
 #include <map>
 #include <chrono>
 #include <algorithm>
+#include <fstream>
 #include "BreakpointTree.hpp"
 #include "JITable.hpp"
 #include "Byte.hpp"
@@ -177,7 +178,7 @@ int main_jitable() {
 	}
 
 	auto t0 = std::chrono::high_resolution_clock::now();
-	auto jit = ExeTable(table_std);
+	auto jit_v1 = ExeTable(table_std);
 	auto t1 = std::chrono::high_resolution_clock::now();
 
 	auto t2 = std::chrono::high_resolution_clock::now();
@@ -186,7 +187,7 @@ int main_jitable() {
 	}
 	auto t3 = std::chrono::high_resolution_clock::now();
 	for (int32_t i = start_point; i <= end_point; i += test_step) {
-		volatile bool index = jit.run(i);
+		volatile bool index = jit_v1.run(i);
 	}
 	auto t4 = std::chrono::high_resolution_clock::now();
 	for (int32_t i = start_point; i <= end_point; i += test_step) {
@@ -210,9 +211,103 @@ int main_jitable() {
 	return 0;
 }
 
+void test_jitable() {
+	std::unordered_map<int32_t, void*> table_std = {};
+
+	for (int32_t i = -1'000; i <= 1'000; i += 1) {
+		if (i == 0 || i % 2 == 0) {
+			continue;
+		}
+		table_std.insert({ i, (void*)i });
+	}
+
+	auto t0 = std::chrono::high_resolution_clock::now();
+	auto jit_v1 = ExeTable(table_std, false);
+	auto t1 = std::chrono::high_resolution_clock::now();
+	auto jit_v2 = ExeTable(table_std, true);
+	auto t2 = std::chrono::high_resolution_clock::now();
+
+	for (int32_t i = -100; i <= 100; i += 1) {
+		auto has_in_std = table_std.find(i) != table_std.end();
+		auto has_in_jit_v1 = jit_v1.run(i) != 0;
+		auto has_in_jit_v2 = jit_v2.run(i) != 0;
+		std::cout << "i: " << std::setw(5) << i 
+			<< ", std: " << std::boolalpha << std::setw(5) << has_in_std 
+			<< ", jit_v1: " << std::setw(5) << has_in_jit_v1
+			<< ", jit_v2: " << std::setw(5) << has_in_jit_v2 << "\n";
+	}
+
+	std::cout << "JIT v1: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0) << ", size: " << jit_v1.size << "\n";
+	std::cout << "JIT v2: " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1) << ", size: " << jit_v2.size << "\n";
+
+	/*
+	{
+		std::ofstream fout;
+		fout.open("v1.bin", std::ios::binary | std::ios::out);
+
+		fout.write((char*)jit_v1.memory, jit_v1.size);
+
+		fout.close();
+	}
+	{
+		std::ofstream fout;
+		fout.open("v2.bin", std::ios::binary | std::ios::out);
+
+		fout.write((char*)jit_v2.memory, jit_v2.size);
+
+		fout.close();
+	}
+	*/
+}
+
+void jitable_version_compare() {
+	std::unordered_map<int32_t, void*> table_std = {};
+
+	int32_t start_point = -1'000'000;
+	int32_t end_point = -start_point;
+	int32_t build_step = 1'00;
+	int32_t test_step = 1;
+	for (int32_t i = start_point; i <= end_point; i += build_step) {
+		if (i == 0) {
+			continue;
+		}
+		table_std.insert({ i, (void*)i });
+	}
+
+	auto t0 = std::chrono::high_resolution_clock::now();
+	auto jit_v1 = ExeTable(table_std);
+	auto t1 = std::chrono::high_resolution_clock::now();
+	auto jit_v2 = ExeTable(table_std, true);
+	auto t2 = std::chrono::high_resolution_clock::now();
+
+
+	auto t3 = std::chrono::high_resolution_clock::now();
+	for (int32_t i = start_point; i <= end_point; i += test_step) {
+		volatile bool index = jit_v1.run(i);
+	}
+	auto t4 = std::chrono::high_resolution_clock::now();
+	for (int32_t i = start_point; i <= end_point; i += test_step) {
+		volatile bool index = jit_v2.run(i);
+	}
+	auto t5 = std::chrono::high_resolution_clock::now();
+
+	std::cout
+		<< "jit v1: " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3)
+		<< ", compilation: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0)
+		<< ", total: " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3 + t1 - t0) << "\n";
+	std::cout
+		<< "jit v2: " << std::chrono::duration_cast<std::chrono::milliseconds>(t5 - t4)
+		<< ", compilation: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1)
+		<< ", total: " << std::chrono::duration_cast<std::chrono::milliseconds>(t5 - t4 + t2 - t1) << "\n";
+}
+
 int main() {
 	// main_jitree();
-	main_jitable();
+	// main_jitable();
+
+	test_jitable();
+	// jitable_version_compare();
+
 
 	return 0;
 }

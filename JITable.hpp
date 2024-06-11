@@ -190,6 +190,62 @@ namespace CodegenTable {
 		}
 	}
 
+	void codegen_impl_v2(
+		JITableTree const* node,
+		std::vector<Byte>& bytes
+	) {
+		// We receive the argument through ecx
+		write_cmp_ecx_based_on_size(node->key, bytes);
+
+		if (node->left == nullptr && node->right == nullptr) {
+			write_bytes(jne_0x00000000, bytes);
+			auto first_label_overwrite_offset = bytes.size() - 4;
+
+			// edi == node->key
+			write_mov_rax_size_based(node->value, bytes);
+			write_bytes(ret, bytes);
+
+			// edi != node->key
+			*(uint32_t*)(bytes.data() + first_label_overwrite_offset) = static_cast<int32_t>(bytes.size() - first_label_overwrite_offset - 4);
+			write_mov_rax_size_based(nullptr, bytes);
+			write_bytes(ret, bytes);
+		}
+		else {
+			write_bytes(jge_0x00000000, bytes);
+			auto first_label_overwrite_offset = bytes.size() - 4;
+
+			// edi < node->key
+			if (node->left != nullptr) {
+				codegen_impl_v2(node->left, bytes);
+			}
+			else {
+				// There is nothing to the left
+				write_mov_rax_size_based(nullptr, bytes);
+				write_bytes(ret, bytes);
+			}
+
+			// edi >= node->key
+			*(uint32_t*)(bytes.data() + first_label_overwrite_offset) = static_cast<int32_t>(bytes.size() - first_label_overwrite_offset - 4);
+			write_bytes(jne_0x00000000, bytes);
+			auto second_label_overwrite_offset = bytes.size() - 4;
+
+			// edi == node->key
+			write_mov_rax_size_based(node->value, bytes);
+			write_bytes(ret, bytes);
+
+			// edi > node->key
+			*(uint32_t*)(bytes.data() + second_label_overwrite_offset) = static_cast<int32_t>(bytes.size() - second_label_overwrite_offset - 4);
+			if (node->right != nullptr) {
+				codegen_impl_v2(node->right, bytes);
+			}
+			else {
+				// There is nothing to the right
+				write_mov_rax_size_based(nullptr, bytes);
+				write_bytes(ret, bytes);
+			}
+		}
+	}
+
 	std::vector<Byte> codegen(JITableTree const* root) {
 		std::map<uint32_t, LabelDefinition> label_defintions = {}; // label counter -> defintion
 		std::vector<LabelUsage> label_usages = {};
@@ -219,15 +275,26 @@ namespace CodegenTable {
 		}
 		return bytes;
 	}
+
+	std::vector<Byte> codegen_v2(JITableTree const* root) {
+		std::vector<Byte> bytes = {};
+		codegen_impl_v2(root, bytes);
+		return bytes;
+	}
 };
 
 class ExeTable {
 	using FUNC_PTR = uint64_t(*)(int32_t);
-	void* memory;
+	bool is_v2_enabled;
 public:
-	explicit ExeTable(const std::unordered_map<int32_t, void*>& basic_table) {
+	void* memory;
+	std::size_t size;
+
+	explicit ExeTable(const std::unordered_map<int32_t, void*>& basic_table, bool use_v2 = false) {
+		is_v2_enabled = use_v2;
 		auto tree = build_table_tree(basic_table);
-		auto bytes = CodegenTable::codegen(tree);
+		auto bytes = use_v2 ? CodegenTable::codegen_v2(tree) : CodegenTable::codegen(tree);
+		size = bytes.size();
 		memory = exec_memory_create(bytes);
 		delete tree;
 	}
