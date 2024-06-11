@@ -29,5 +29,8 @@
     <ClInclude Include="ExecutableMemory.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="JITable.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

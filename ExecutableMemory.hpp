@@ -1,6 +1,7 @@
 #ifndef _HEADER_EXECUTABLE_MEMORY_HPP_
 #define _HEADER_EXECUTABLE_MEMORY_HPP_
 
+#define NOMINMAX
 #include <windows.h>
 #include <vector>
 #include "Byte.hpp"

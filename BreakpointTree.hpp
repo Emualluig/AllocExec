@@ -100,7 +100,7 @@ int32_t interval_search_binary(const std::vector<float>& intervals, const float 
 	return -1;
 }
 
-namespace Codegen {
+namespace CodegenInterval {
 	struct ASM_context {
 		uint32_t global_label_counter;
 		uint32_t global_return_counter;
@@ -137,45 +137,45 @@ namespace Codegen {
 		label_usages.push_back(LabelUsage{ .start_offset = bytes.size() - 4, .id = (uint32_t)numbers.size() - 1, .type = UsageType::DEFERENCE });
 
 		auto current_label = context.global_label_counter++;
-		write_bytes(jae_0x00, bytes);
+		write_bytes(jae_0x00000000, bytes);
 		label_usages.push_back(LabelUsage{ .start_offset = bytes.size() - 4, .id = current_label, .type = UsageType::JUMP });
 
 		if (node->left == nullptr && node->right == nullptr) {
 			if (rightCount == 0) {
 				// We are on the far left			
 				// xmm0 < top->value
-				write_bytes(mov_eax_MISSING, bytes);
+				write_bytes(mov_eax_MISSING_4_BYTES, bytes);
 				write_bytes<int32_t>(-1, bytes);
 				write_bytes(ret, bytes);
 
 				// xmm0 >= top->value
 				label_definitions.insert({ current_label, LabelDefinition{.start_offset = bytes.size() } });
-				write_bytes(mov_eax_MISSING, bytes);
+				write_bytes(mov_eax_MISSING_4_BYTES, bytes);
 				write_bytes<uint32_t>(context.global_return_counter++, bytes);
 				write_bytes(ret, bytes);
 			}
 			else if (leftCount == 0) {
 				// We are on the far right
 				// xmm0 < top->value
-				write_bytes(mov_eax_MISSING, bytes);
+				write_bytes(mov_eax_MISSING_4_BYTES, bytes);
 				write_bytes<uint32_t>(context.global_return_counter++, bytes);
 				write_bytes(ret, bytes);
 
 				// xmm0 >= top->value
 				label_definitions.insert({ current_label, LabelDefinition{.start_offset = bytes.size() } });
-				write_bytes(mov_eax_MISSING, bytes);
+				write_bytes(mov_eax_MISSING_4_BYTES, bytes);
 				write_bytes<int32_t>(-1, bytes);
 				write_bytes(ret, bytes);
 			}
 			else {
 				// xmm0 < top->value
-				write_bytes(mov_eax_MISSING, bytes);
+				write_bytes(mov_eax_MISSING_4_BYTES, bytes);
 				write_bytes<uint32_t>(context.global_return_counter++, bytes);
 				write_bytes(ret, bytes);
 
 				// xmm0 >= top->value
 				label_definitions.insert({ current_label, LabelDefinition{.start_offset = bytes.size() } });
-				write_bytes(mov_eax_MISSING, bytes);
+				write_bytes(mov_eax_MISSING_4_BYTES, bytes);
 				write_bytes<uint32_t>(context.global_return_counter++, bytes);
 				write_bytes(ret, bytes);
 			}
@@ -184,7 +184,7 @@ namespace Codegen {
 			if (rightCount == 0) {
 				// We are on the far left
 				// xmm0 < top->value
-				write_bytes(mov_eax_MISSING, bytes);
+				write_bytes(mov_eax_MISSING_4_BYTES, bytes);
 				write_bytes<uint32_t>(-1, bytes);
 				write_bytes(ret, bytes);
 
@@ -194,7 +194,7 @@ namespace Codegen {
 			}
 			else {
 				// xmm0 < top->value
-				write_bytes(mov_eax_MISSING, bytes);
+				write_bytes(mov_eax_MISSING_4_BYTES, bytes);
 				write_bytes<uint32_t>(context.global_return_counter++, bytes);
 				write_bytes(ret, bytes);
 
@@ -212,7 +212,7 @@ namespace Codegen {
 
 				// xmm0 >= top->value
 				label_definitions.insert({ current_label, LabelDefinition{.start_offset = bytes.size() } });
-				write_bytes(mov_eax_MISSING, bytes);
+				write_bytes(mov_eax_MISSING_4_BYTES, bytes);
 				write_bytes<uint32_t>(-1, bytes);
 				write_bytes(ret, bytes);
 			}
@@ -222,7 +222,7 @@ namespace Codegen {
 
 				// xmm0 >= top->value
 				label_definitions.insert({ current_label, LabelDefinition{.start_offset = bytes.size() } });
-				write_bytes(mov_eax_MISSING, bytes);
+				write_bytes(mov_eax_MISSING_4_BYTES, bytes);
 				write_bytes<uint32_t>(context.global_return_counter++, bytes);
 				write_bytes(ret, bytes);
 			}
@@ -239,18 +239,18 @@ namespace Codegen {
 
 	std::vector<Byte> codegen(const std::vector<float>& intervals, BreakpointTree const* root) {
 		// C ABI calling convention: In this case we are passed "value" via xmm0 and we return into eax
-		std::map<uint32_t, Codegen::LabelDefinition> label_defintions = {}; // label counter -> defintion
-		std::vector<Codegen::LabelUsage> label_usages = {};
-		Codegen::ASM_context context = { .global_label_counter = (uint32_t)intervals.size() + 10, .global_return_counter = 0 };
+		std::map<uint32_t, CodegenInterval::LabelDefinition> label_defintions = {}; // label counter -> defintion
+		std::vector<CodegenInterval::LabelUsage> label_usages = {};
+		CodegenInterval::ASM_context context = { .global_label_counter = (uint32_t)intervals.size() + 10, .global_return_counter = 0 };
 
 		std::vector<float> numbers = {};
 		std::vector<Byte> bytes = {};
-		Codegen::codegen_impl(root, bytes, label_defintions, label_usages, numbers, context, 0, 0);
+		CodegenInterval::codegen_impl(root, bytes, label_defintions, label_usages, numbers, context, 0, 0);
 		for (std::size_t i = 0; i < numbers.size(); i++) {
 			auto length = write_bytes<float>(numbers.at(i), bytes);
 			label_defintions.insert({
 				i,
-				Codegen::LabelDefinition{.start_offset = bytes.size() }
+				CodegenInterval::LabelDefinition{.start_offset = bytes.size() }
 			});
 		}
 		Byte* ptr_no_offset = bytes.data();
@@ -259,10 +259,10 @@ namespace Codegen {
 			uint32_t* ptr = (uint32_t*)bptr;
 			if (const auto iter = label_defintions.find(usage.id); iter != label_defintions.end()) {
 				auto& def = iter->second;
-				if (usage.type == Codegen::UsageType::DEFERENCE) {
+				if (usage.type == CodegenInterval::UsageType::DEFERENCE) {
 					*ptr = def.start_offset - usage.start_offset - 8;
 				}
-				else if (usage.type == Codegen::UsageType::JUMP) {
+				else if (usage.type == CodegenInterval::UsageType::JUMP) {
 					*ptr = def.start_offset - usage.start_offset - 4;
 				}
 				else {
@@ -284,7 +284,7 @@ public:
 	explicit ExeIntervalSearch(const std::vector<float>& intervals) {
 		auto tree = build_tree(intervals);
 		// tree_print(tree, 0);
-		auto bytes = Codegen::codegen(intervals, tree);
+		auto bytes = CodegenInterval::codegen(intervals, tree);
 		memory = exec_memory_create(bytes);
 		delete tree;
 	}

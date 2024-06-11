@@ -137,6 +137,7 @@
     <ClInclude Include="BreakpointTree.hpp" />
     <ClInclude Include="Byte.hpp" />
     <ClInclude Include="ExecutableMemory.hpp" />
+    <ClInclude Include="JITable.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

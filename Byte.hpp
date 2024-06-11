@@ -22,16 +22,27 @@ std::size_t write_bytes(const std::vector<Byte>& source, std::vector<Byte>& dest
 }
 
 // It is missing 4 bytes for the constant
-const std::vector<Byte> mov_eax_MISSING = {
+const std::vector<Byte> mov_eax_MISSING_4_BYTES = {
 	0xB8
+};
+const std::vector<Byte> mov_rax_MISSING_8_BYTES = {
+	0x48, 0xB8
 };
 const std::vector<Byte> comiss_xmm0_DWORD_PTR_rip_PLUS_0x00000000 = {
 	0x0F, 0x2F, 0x05, 0x00, 0x00, 0x00, 0x00
 };
-const std::vector<Byte> jae_0x00 = {
+// Often used for floating point comparaison
+const std::vector<Byte> jae_0x00000000 = {
 	0x0F, 0x83, 0x00, 0x00, 0x00, 0x00
 };
-const std::vector<Byte> jbe_0x00 = {
+// Often used for integer comparaison
+const std::vector<Byte> jge_0x00000000 = {
+	0x0F, 0x8D, 0x00, 0x00, 0x00, 0x00 // This is jge, not jae
+};
+const std::vector<Byte> jne_0x00000000 = {
+	0x0F, 0x85, 0x00, 0x00, 0x00, 0x00
+};
+const std::vector<Byte> jbe_0x00000000 = {
 	0x0F, 0x86, 0x00, 0x00, 0x00, 0x00
 };
 const std::vector<Byte> ret = {
@@ -42,6 +53,18 @@ const std::vector<Byte> movss_xmm1_DWORD_PTR_rip_PLUS_0x00000000 = {
 };
 const std::vector<Byte> comiss_xmm0_xmm1 = {
 	0x0F, 0x2F, 0xC1
+};
+const std::vector<Byte> cmp_edi_0x00000000 = {
+	0x81, 0xFF, 0x00, 0x00, 0x00, 0x00
+};
+const std::vector<Byte> cmp_ecx_MISSING_4_BYTES = {
+	0x81, 0xF9
+};
+const std::vector<Byte> cmp_edi_MISSING_2_BYTES = {
+	0x82, 0xFF
+};
+const std::vector<Byte> cmp_edi_MISSING_1_BYTE = {
+	0x83, 0xFF, 0x00
 };
 
 #endif // !_HEADER_BYTE_HPP_
